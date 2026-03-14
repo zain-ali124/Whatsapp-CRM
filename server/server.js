@@ -1,7 +1,8 @@
+require('dotenv').config();
 const http = require('http');
 const mongoose = require('mongoose');
 const { Server } = require('socket.io');
-require('dotenv').config();
+
 
 const app = require('./app');
 const setupSockets = require('./src/sockets/index');
