@@ -1,0 +1,34 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Env / secrets
+.env
+.env.*
+secrets.json
+*.pem
+*.key
+
+# Build / caches
+dist/
+build/
+.next/
+.cache/
+coverage/
+.parcel-cache/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Database / uploads
+*.sqlite
+*.db
+/uploads/
+
+# Logs
+logs/
+*.log
