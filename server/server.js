@@ -1,3 +1,11 @@
+process.on("uncaughtException", err => {
+  console.log("Uncaught Exception:", err);
+});
+
+process.on("unhandledRejection", err => {
+  console.log("Unhandled Rejection:", err);
+});
+
 require('dotenv').config();
 const http = require('http');
 const mongoose = require('mongoose');
@@ -28,8 +36,8 @@ setupSockets(io);
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('✅ MongoDB connected');
-    server.listen(PORT, () => {
-      console.log(`✅ Server running on port ${PORT}`);
+    server.listen(PORT || 5000, () => {
+      console.log(`✅ Server running on port ${PORT || 5000}`);
       startAllCronJobs(io);
     });
   })
