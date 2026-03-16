@@ -62,9 +62,9 @@ export default function LeadDetail() {
   const aiInsights = data.aiInsights || null;
 
   return (
-    <div className="p-8 space-y-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-8 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       {/* Breadcrumb */}
-      <motion.div initial={{ opacity:0, y:-8 }} animate={{ opacity:1, y:0 }} className="flex items-center gap-2 text-sm">
+      <motion.div initial={{ opacity:0, y:-8 }} animate={{ opacity:1, y:0 }} className="flex items-center gap-2 text-[11px] sm:text-sm overflow-x-auto no-scrollbar whitespace-nowrap">
         <Link to="/dashboard" className="text-primary hover:underline font-medium">Dashboard</Link>
         <span className="text-slate-300 dark:text-slate-600">/</span>
         <Link to="/leads" className="text-primary hover:underline font-medium">Leads</Link>
@@ -73,43 +73,45 @@ export default function LeadDetail() {
       </motion.div>
 
       {/* Profile Header */}
-      <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.08 }} className="card p-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex gap-5 items-center">
+      <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.08 }} className="card p-4 sm:p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+          <div className="flex gap-3 sm:gap-5 items-center">
             <div className="relative">
-              <div className="size-20 rounded-full bg-primary/15 flex items-center justify-center text-primary text-2xl font-black ring-4 ring-primary/10">
+              <div className="size-14 sm:size-20 rounded-full bg-primary/15 flex items-center justify-center text-primary text-xl sm:text-2xl font-black ring-4 ring-primary/10">
                 {getInitials(lead.name)}
               </div>
-              <span className="absolute bottom-1 right-1 size-4 rounded-full border-2 border-white dark:border-slate-900 bg-green-500"/>
+              <span className="absolute bottom-0 right-0 size-3 sm:size-4 rounded-full border-2 border-white dark:border-slate-900 bg-green-500"/>
             </div>
-            <div>
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{lead.name}</h1>
-                <StatusBadge status={lead.status} />
-                <LeadScoreBadge score={lead.leadScore || 0} showLabel />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <h1 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">{lead.name}</h1>
+                <StatusBadge status={lead.status} className="scale-90 sm:scale-100" />
               </div>
-              <p className="text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 text-sm">
-                <span className="material-symbols-outlined text-[16px]">schedule</span>
-                Last active: {lead.lastMessageAt ? timeAgo(lead.lastMessageAt) : timeAgo(lead.createdAt)}
-              </p>
+              <div className="flex items-center gap-3 mt-1">
+                <LeadScoreBadge score={lead.leadScore || 0} showLabel className="scale-90 sm:scale-100 origin-left" />
+                <p className="hidden sm:flex text-slate-500 dark:text-slate-400 items-center gap-2 text-sm">
+                  <span className="material-symbols-outlined text-[16px]">schedule</span>
+                  Active {lead.lastMessageAt ? timeAgo(lead.lastMessageAt) : timeAgo(lead.createdAt)}
+                </p>
+              </div>
             </div>
           </div>
-          <div className="flex gap-3">
-            <button onClick={() => navigate(`/inbox?lead=${id}`)} className="btn-secondary gap-2">
+          <div className="flex gap-2 sm:gap-3">
+            <button onClick={() => navigate(`/inbox?lead=${id}`)} className="btn-secondary flex-1 sm:flex-none justify-center gap-2 text-sm py-2">
               <span className="material-symbols-outlined text-[18px]">chat</span> Message
             </button>
-            <button className="btn-primary gap-2">
-              <span className="material-symbols-outlined text-[18px]">edit</span> Edit Profile
+            <button className="btn-primary flex-1 sm:flex-none justify-center gap-2 text-sm py-2">
+              <span className="material-symbols-outlined text-[18px]">edit</span> Edit
             </button>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="mt-8 border-b border-slate-200 dark:border-slate-700">
-          <nav className="flex gap-8">
+        <div className="mt-6 sm:mt-8 border-b border-slate-200 dark:border-slate-700 overflow-x-auto no-scrollbar">
+          <nav className="flex gap-6 sm:gap-8 min-w-max">
             {TABS.map(t => (
               <button key={t} onClick={() => setTab(t)}
-                className={`pb-4 text-sm font-bold tracking-wide transition-colors flex items-center gap-1.5
+                className={`pb-3 sm:pb-4 text-xs sm:text-sm font-bold tracking-wide transition-colors flex items-center gap-1.5 whitespace-nowrap
                   ${tab === t ? 'text-primary border-b-2 border-primary' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
               >
                 {t === 'AI Insights' && <span className="material-symbols-outlined text-[16px]">auto_awesome</span>}

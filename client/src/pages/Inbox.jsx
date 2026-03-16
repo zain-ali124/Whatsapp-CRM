@@ -80,12 +80,23 @@ export default function Inbox() {
   const [message, setMessage]        = useState('');
   const [filter, setFilter]          = useState('all'); // all | unread
   const [search, setSearch]          = useState('');
+
+  // Mobile navigation state: 'list' | 'chat' | 'info'
+  const [mobileView, setMobileView] = useState('list');
+
   const [newMessages, setNewMessages] = useState([]);
   const messagesEndRef = useRef(null);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [reminderAtInput, setReminderAtInput] = useState('');
+
+  // Switch to chat view when a lead is selected on mobile
+  useEffect(() => {
+    if (activeLead && mobileView === 'list') {
+      setMobileView('chat');
+    }
+  }, [activeLead]);
 
   /* Leads list */
   const { data: leadsData, isLoading: leadsLoading } = useQuery({
@@ -189,15 +200,18 @@ export default function Inbox() {
   };
 
   return (
-    <div className="flex flex-1 overflow-hidden h-full">
+    <div className="flex flex-1 overflow-hidden h-full relative">
       {/* Leads Column */}
-      <section className="w-80 shrink-0 flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700">
+      <section className={`
+        ${mobileView === 'list' ? 'flex' : 'hidden md:flex'}
+        w-full md:w-80 shrink-0 flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700
+      `}>
         <div className="p-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Conversations</h2>
             {isAgent && (
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-primary/10 text-primary rounded-lg">
-                Assigned to you
+                Assigned
               </span>
             )}
           </div>
@@ -209,10 +223,10 @@ export default function Inbox() {
               className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
             {['all','unread','assigned'].map(f => (
               <button key={f} onClick={() => setFilter(f)}
-                className={`text-xs px-3 py-1.5 rounded-full font-semibold transition-colors capitalize
+                className={`text-[11px] px-3 py-1.5 rounded-full font-semibold transition-colors capitalize shrink-0
                   ${filter === f ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
               >{f}</button>
             ))}
@@ -229,110 +243,134 @@ export default function Inbox() {
           ) : leads.length === 0 ? (
             <div className="p-8 text-center text-slate-400 text-sm">
               <span className="material-symbols-outlined text-3xl mb-2 block">inbox</span>
-              {isAgent
-                ? 'No leads assigned to you yet. Ask your manager to assign leads.'
-                : 'No conversations yet'
-              }
+              {isAgent ? 'No leads assigned' : 'No conversations yet'}
             </div>
           ) : leads.map(lead => (
-            <ConvoItem key={lead._id} lead={lead} isActive={activeLead === lead._id} onClick={() => setActiveLead(lead._id)} />
+            <ConvoItem key={lead._id} lead={lead} isActive={activeLead === lead._id} onClick={() => { setActiveLead(lead._id); setMobileView('chat'); }} />
           ))}
         </div>
       </section>
 
       {/* Chat Window */}
-      {activeLead ? (
-        <main className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-950">
-          {/* Chat Header */}
-          <header className="h-16 flex items-center justify-between px-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="size-10 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold text-sm">
-                {getInitials(activeLeadData?.name || '')}
-              </div>
-              <div>
-                <h2 className="font-bold text-sm text-slate-900 dark:text-slate-100">{activeLeadData?.name || '…'}</h2>
-                <div className="flex items-center gap-1.5">
-                  {activeLeadData?.status && <StatusBadge status={activeLeadData.status} />}
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              {[{icon:'more_vert', title:'More'}].map(({icon, title}) => (
-                <button key={icon} title={title}
-                  className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors">
-                  <span className="material-symbols-outlined text-[20px]">{icon}</span>
+      <main className={`
+        ${mobileView === 'chat' ? 'flex' : 'hidden md:flex'}
+        flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-950
+      `}>
+        {activeLead ? (
+          <>
+            {/* Chat Header */}
+            <header className="h-16 flex items-center justify-between px-4 sm:px-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shrink-0">
+              <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
+                <button
+                  onClick={() => setMobileView('list')}
+                  className="md:hidden p-1.5 text-slate-400 hover:text-slate-600"
+                >
+                  <span className="material-symbols-outlined">arrow_back</span>
                 </button>
-              ))}
-            </div>
-          </header>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {msgsLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <span className="material-symbols-outlined text-3xl text-slate-300 animate-spin">progress_activity</span>
-              </div>
-            ) : messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-slate-400 text-sm">
-                <span className="material-symbols-outlined text-5xl mb-3">chat_bubble_outline</span>
-                <p>No messages yet</p>
-                <p className="text-xs mt-1">Start the conversation below</p>
-              </div>
-            ) : (
-              <>
-                <div className="flex justify-center">
-                  <span className="text-[10px] bg-slate-200 dark:bg-slate-800 px-3 py-1 rounded-full text-slate-500 uppercase font-bold tracking-widest">
-                    Conversation
-                  </span>
+                <div className="size-8 sm:size-10 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold text-xs sm:text-sm shrink-0">
+                  {getInitials(activeLeadData?.name || '')}
                 </div>
-                {messages.map(msg => <Bubble key={msg._id} msg={msg} />)}
-              </>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+                <div className="min-w-0">
+                  <h2 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">{activeLeadData?.name || '…'}</h2>
+                  <div className="flex items-center gap-1.5 mt-0.5 sm:mt-0">
+                    {activeLeadData?.status && <StatusBadge status={activeLeadData.status} className="scale-75 origin-left" />}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-1 sm:gap-2">
+                <button
+                  onClick={() => setMobileView('info')}
+                  className="md:hidden p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[20px]">info</span>
+                </button>
+                <button className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                  <span className="material-symbols-outlined text-[20px]">more_vert</span>
+                </button>
+              </div>
+            </header>
 
-          {/* Input */}
-          <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 shrink-0">
-            <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-2">
-              <button className="text-slate-400 hover:text-primary transition-colors">
-                <span className="material-symbols-outlined text-[20px]">sentiment_satisfied</span>
-              </button>
-              <button className="text-slate-400 hover:text-primary transition-colors">
-                <span className="material-symbols-outlined text-[20px]">attach_file</span>
-              </button>
-              <input
-                value={message}
-                onChange={e => setMessage(e.target.value)}
-                onKeyDown={handleKey}
-                placeholder="Type a message… (Enter to send)"
-                className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
-              />
-              <button
-                onClick={handleSend}
-                disabled={!message.trim() || sendMut.isPending}
-                className="size-9 bg-primary text-white rounded-xl flex items-center justify-center hover:bg-primary-600 transition-colors disabled:opacity-50 shrink-0 shadow-[0_2px_8px_rgba(16,183,127,0.35)]"
-              >
-                {sendMut.isPending
-                  ? <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-                  : <span className="material-symbols-outlined text-[16px]">send</span>
-                }
-              </button>
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+              {msgsLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <span className="material-symbols-outlined text-3xl text-slate-300 animate-spin">progress_activity</span>
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-slate-400 text-sm">
+                  <span className="material-symbols-outlined text-4xl sm:text-5xl mb-3">chat_bubble_outline</span>
+                  <p>No messages yet</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-center">
+                    <span className="text-[9px] sm:text-[10px] bg-slate-200 dark:bg-slate-800 px-3 py-1 rounded-full text-slate-500 uppercase font-bold tracking-widest">
+                      Conversation
+                    </span>
+                  </div>
+                  {messages.map(msg => <Bubble key={msg._id} msg={msg} />)}
+                </>
+              )}
+              <div ref={messagesEndRef} />
             </div>
+
+            {/* Input */}
+            <div className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 shrink-0">
+              <div className="flex items-center gap-2 sm:gap-3 bg-slate-100 dark:bg-slate-800 rounded-2xl px-3 sm:px-4 py-2">
+                <button className="text-slate-400 hover:text-primary transition-colors hidden sm:block">
+                  <span className="material-symbols-outlined text-[20px]">sentiment_satisfied</span>
+                </button>
+                <button className="text-slate-400 hover:text-primary transition-colors">
+                  <span className="material-symbols-outlined text-[20px]">attach_file</span>
+                </button>
+                <input
+                  value={message}
+                  onChange={e => setMessage(e.target.value)}
+                  onKeyDown={handleKey}
+                  placeholder="Type a message…"
+                  className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={!message.trim() || sendMut.isPending}
+                  className="size-9 bg-primary text-white rounded-xl flex items-center justify-center hover:bg-primary-600 transition-colors disabled:opacity-50 shrink-0 shadow-[0_2px_8px_rgba(16,183,127,0.35)]"
+                >
+                  {sendMut.isPending
+                    ? <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                    : <span className="material-symbols-outlined text-[16px]">send</span>
+                  }
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+            <motion.div initial={{ opacity:0, scale:0.9 }} animate={{ opacity:1, scale:1 }} className="text-center p-6">
+              <span className="material-symbols-outlined text-6xl text-slate-300 dark:text-slate-600 mb-4 block">forum</span>
+              <p className="font-semibold text-slate-500 dark:text-slate-400">Select a conversation</p>
+            </motion.div>
           </div>
-        </main>
-      ) : (
-        <main className="flex-1 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-400">
-          <motion.div initial={{ opacity:0, scale:0.9 }} animate={{ opacity:1, scale:1 }} className="text-center">
-            <span className="material-symbols-outlined text-6xl text-slate-300 dark:text-slate-600 mb-4 block">forum</span>
-            <p className="font-semibold text-slate-500 dark:text-slate-400">Select a conversation to start</p>
-            <p className="text-sm mt-1">Or wait for a new message to come in</p>
-          </motion.div>
-        </main>
-      )}
+        )}
+      </main>
 
       {/* Info Panel */}
       {activeLead && activeLeadData && (
-        <aside className="w-72 shrink-0 flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700 overflow-y-auto">
+        <aside className={`
+          ${mobileView === 'info' ? 'flex' : 'hidden xl:flex md:w-72'}
+          fixed inset-0 z-50 md:relative md:inset-auto md:z-0
+          w-full shrink-0 flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700 overflow-y-auto
+        `}>
+          {/* Mobile Info Header */}
+          <div className="md:hidden h-16 flex items-center px-4 border-b border-slate-100 dark:border-slate-800">
+            <button
+              onClick={() => setMobileView('chat')}
+              className="p-1.5 text-slate-400 hover:text-slate-600 mr-2"
+            >
+              <span className="material-symbols-outlined">arrow_back</span>
+            </button>
+            <h3 className="font-bold text-sm">Lead Details</h3>
+          </div>
+
           <div className="p-6 flex flex-col items-center text-center border-b border-slate-100 dark:border-slate-800">
             <div className="size-20 rounded-full bg-primary/15 flex items-center justify-center text-primary text-2xl font-black mb-4 ring-4 ring-primary/10">
               {getInitials(activeLeadData.name || '')}
@@ -392,7 +430,7 @@ export default function Inbox() {
 
           {/* Add Note Modal */}
           {showNoteModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/40" onClick={() => setShowNoteModal(false)} />
               <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md p-6">
                 <h3 className="font-bold mb-3">Add Note</h3>
@@ -414,7 +452,7 @@ export default function Inbox() {
 
           {/* Reminder Modal */}
           {showReminderModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/40" onClick={() => setShowReminderModal(false)} />
               <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md p-6">
                 <h3 className="font-bold mb-3">Set Reminder</h3>

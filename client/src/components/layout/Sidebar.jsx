@@ -31,7 +31,7 @@ const AGENT_BOTTOM = [
   { to: '/settings', icon: 'settings', label: 'Settings' },
 ];
 
-export default function Sidebar({ collapsed = false }) {
+export default function Sidebar({ collapsed = false, onClose }) {
   const { user, logout, isAgent } = useAuthStore();
   const navigate   = useNavigate();
   const agentMode  = isAgent?.() ?? user?.type === 'agent';
@@ -42,20 +42,35 @@ export default function Sidebar({ collapsed = false }) {
   const handleLogout = () => { logout(); navigate('/login'); };
 
   return (
-    <aside className={`${collapsed ? 'w-16' : 'w-64'} flex flex-col bg-sidebar-dark transition-all duration-300 shrink-0`}>
-      {/* Brand */}
-      <div className="flex items-center gap-3 px-4 py-5">
-        <div className="bg-primary size-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-[0_4px_12px_rgba(16,183,127,0.4)]">
-          <span className="material-symbols-outlined text-xl">chat</span>
+    <aside className={`
+      ${collapsed ? 'w-20' : 'w-64'}
+      fixed inset-y-0 left-0 z-40 lg:relative flex flex-col bg-sidebar-dark transition-all duration-300 shrink-0
+      ${collapsed ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}
+    `}>
+      {/* Brand & Close Button (Mobile) */}
+      <div className="flex items-center justify-between px-4 py-6">
+        <div className="flex items-center gap-3">
+          <div className="bg-primary size-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-[0_4px_12px_rgba(16,183,127,0.4)]">
+            <span className="material-symbols-outlined text-xl">chat</span>
+          </div>
+          {!collapsed && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0">
+              <h1 className="text-white text-sm font-bold leading-tight truncate">WhatsApp CRM</h1>
+              <p className="text-primary text-[10px] font-semibold tracking-widest uppercase truncate">
+                {agentMode ? 'Agent Portal' : 'Enterprise'}
+              </p>
+            </motion.div>
+          )}
         </div>
-        {!collapsed && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <h1 className="text-white text-sm font-bold leading-tight">WhatsApp CRM</h1>
-            <p className="text-primary text-[10px] font-semibold tracking-widest uppercase">
-              {agentMode ? 'Agent Portal' : 'Enterprise'}
-            </p>
-          </motion.div>
-        )}
+
+        {/* Close Button - Strictly Mobile Only */}
+        <button
+          onClick={onClose}
+          className="lg:hidden p-2 text-slate-400 hover:text-white transition-colors"
+          aria-label="Close Sidebar"
+        >
+          <span className="material-symbols-outlined text-[22px]">close</span>
+        </button>
       </div>
 
       {/* Agent badge */}

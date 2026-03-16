@@ -353,22 +353,22 @@ export default function Leads() {
   };
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 sm:p-8 space-y-4 sm:space-y-6">
 
       {/* ── Header ── */}
       <motion.div initial={{ opacity:0, y:-12 }} animate={{ opacity:1, y:0 }}
-        className="flex items-center justify-between flex-wrap gap-3"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100">
             {isAgent ? 'My Leads' : 'Leads Management'}
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
+          <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-0.5">
             {isAgent ? 'Leads assigned to you.' : 'Track and nurture your WhatsApp prospects.'}
           </p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => setShowAdd(true)} className="btn-primary gap-2">
+          <button onClick={() => setShowAdd(true)} className="btn-primary w-full sm:w-auto gap-2 text-sm py-2 sm:py-2.5">
             <span className="material-symbols-outlined text-[18px]">person_add</span>
             Add Lead
           </button>
@@ -377,17 +377,17 @@ export default function Leads() {
 
       {/* ── Filters ── */}
       <motion.div initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.08 }}
-        className="card p-4 space-y-3"
+        className="card p-4 space-y-4"
       >
-        <div className={`grid gap-3 ${isAgent ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-5'}`}>
-          <div className={isAgent ? '' : 'md:col-span-2'}>
+        <div className={`grid gap-3 ${isAgent ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-5'}`}>
+          <div className={isAgent ? 'sm:col-span-2 lg:col-span-1' : 'sm:col-span-2'}>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
               <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}
-                placeholder="Name or phone…" className="input-field pl-10 py-2.5"/>
+                placeholder="Name or phone…" className="input-field pl-10 py-2 text-sm"/>
             </div>
           </div>
-          <select value={status} onChange={e=>{setStatus(e.target.value);setPage(1);}} className="input-field py-2.5">
+          <select value={status} onChange={e=>{setStatus(e.target.value);setPage(1);}} className="input-field py-2 text-sm">
             <option value="">All Statuses</option>
             <option value="new">New Lead</option>
             <option value="contacted">Contacted</option>
@@ -397,7 +397,7 @@ export default function Leads() {
             <option value="closed">Closed</option>
             <option value="lost">Lost</option>
           </select>
-          <select value={source} onChange={e=>{setSource(e.target.value);setPage(1);}} className="input-field py-2.5">
+          <select value={source} onChange={e=>{setSource(e.target.value);setPage(1);}} className="input-field py-2 text-sm">
             <option value="">All Sources</option>
             <option value="organic">Organic</option>
             <option value="whatsapp_ad">WhatsApp Ads</option>
@@ -409,7 +409,7 @@ export default function Leads() {
           </select>
           {/* Agent filter — hidden from agents themselves */}
           {!isAgent && (
-            <select value={agentId} onChange={e=>{setAgentId(e.target.value);setPage(1);}} className="input-field py-2.5">
+            <select value={agentId} onChange={e=>{setAgentId(e.target.value);setPage(1);}} className="input-field py-2 text-sm">
               <option value="">All Agents</option>
               <option value="unassigned">Unassigned</option>
               {agents.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}

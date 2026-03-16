@@ -13,7 +13,20 @@ export default function AppLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background-light dark:bg-background-dark">
-      <Sidebar collapsed={collapsed} />
+      {/* Mobile Overlay */}
+      <AnimatePresence>
+        {!collapsed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setCollapsed(true)}
+            className="fixed inset-0 bg-black/50 z-30 lg:hidden backdrop-blur-sm"
+          />
+        )}
+      </AnimatePresence>
+
+      <Sidebar collapsed={collapsed} onClose={() => setCollapsed(true)} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Header onToggleSidebar={() => setCollapsed(!collapsed)} />

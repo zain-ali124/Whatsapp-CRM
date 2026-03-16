@@ -110,9 +110,9 @@ export default function Header({ onToggleSidebar }) {
   }
 
   return (
-    <header className="h-16 border-b border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900 px-6 flex items-center justify-between shrink-0 sticky top-0 z-30">
+    <header className="h-16 border-b border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900 px-4 sm:px-6 flex items-center justify-between shrink-0 sticky top-0 z-30">
       {/* Left */}
-      <div className="flex items-center gap-4 flex-1">
+      <div className="flex items-center gap-2 sm:gap-4 flex-1">
         <button
           onClick={onToggleSidebar}
           className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
@@ -120,25 +120,25 @@ export default function Header({ onToggleSidebar }) {
           <span className="material-symbols-outlined text-[20px]">menu</span>
         </button>
 
-        {/* Search */}
-        <div className="relative w-full max-w-sm">
+        {/* Search - Hidden or compact on mobile */}
+        <div className="relative w-full max-w-[40px] sm:max-w-sm transition-all duration-300 group">
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
           <input
             name="globalSearch"
             type="text"
-            placeholder="Search leads, agents, messages…"
-            className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            placeholder="Search…"
+            className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all opacity-0 pointer-events-none sm:opacity-100 sm:pointer-events-auto"
           />
         </div>
       </div>
 
       {/* Right */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2">
         {/* Theme Toggle */}
-        <ThemeToggle className="mr-1" />
+        <ThemeToggle className="mr-0.5 sm:mr-1" />
 
-        {/* Help */}
-        <button className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+        {/* Help - Hidden on extra small mobile */}
+        <button className="hidden sm:block p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
           <span className="material-symbols-outlined text-[20px]">help_outline</span>
         </button>
 
@@ -159,7 +159,7 @@ export default function Header({ onToggleSidebar }) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 8, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
-                className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden z-50"
+                className="absolute right-0 top-full mt-2 w-[calc(100vw-32px)] sm:w-80 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden z-50"
               >
                 <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                   <span className="font-bold text-sm">Notifications</span>
@@ -194,15 +194,15 @@ export default function Header({ onToggleSidebar }) {
         <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
 
         {/* Avatar */}
-        <div className="flex items-center gap-2 cursor-pointer group">
+        <div className="flex items-center gap-2 cursor-pointer group p-1 sm:p-0">
           <div className="size-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs ring-2 ring-primary/20">
             {getInitials(user?.name || 'A')}
           </div>
-          <div className="hidden sm:block text-left">
+          <div className="hidden md:block text-left">
             <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{user?.name || 'Account'}</div>
             <div className="text-xs text-slate-400">{user?.businessName || user?.email || ''}</div>
           </div>
-          <span className="material-symbols-outlined text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 text-[18px] transition-colors">expand_more</span>
+          <span className="hidden sm:block material-symbols-outlined text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 text-[18px] transition-colors">expand_more</span>
         </div>
       </div>
       {/* Reminder modal */}

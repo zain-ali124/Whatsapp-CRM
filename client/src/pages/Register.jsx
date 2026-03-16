@@ -40,15 +40,15 @@ export default function Register() {
   ];
 
   return (
-    <div className="h-screen flex overflow-hidden bg-background-light dark:bg-background-dark font-display">
+    <div className="h-screen flex overflow-hidden bg-background-light dark:bg-background-dark font-display relative">
       <div className="fixed top-4 right-4 z-50"><ThemeToggle /></div>
 
-      {/* Left */}
+      {/* Left - Hero hidden on mobile/tablet */}
       <motion.div
         initial={{ opacity: 0, x: -40 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6 }}
-        className="hidden lg:flex lg:w-1/2 bg-primary/8 dark:bg-primary/5 flex-col justify-center items-center p-8 relative overflow-hidden"
+        className="hidden xl:flex xl:w-1/2 bg-primary/8 dark:bg-primary/5 flex-col justify-center items-center p-8 relative overflow-hidden"
       >
         <div className="absolute top-0 left-0 w-72 h-72 bg-primary/15 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary/10 rounded-full translate-x-1/4 translate-y-1/4 blur-3xl" />
@@ -139,12 +139,12 @@ export default function Register() {
         </div>
       </motion.div>
 
-      {/* Right */}
+      {/* Right - Scrollable on mobile if content exceeds */}
       <motion.div
         initial={{ opacity: 0, x: 40 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6 }}
-        className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 sm:p-8 bg-white dark:bg-background-dark overflow-y-auto"
+        className="w-full xl:w-1/2 flex flex-col items-center justify-center p-4 sm:p-8 bg-white dark:bg-background-dark overflow-y-auto no-scrollbar"
       >
         <div className="w-full max-w-md">
           <div className="flex items-center gap-3 mb-5">

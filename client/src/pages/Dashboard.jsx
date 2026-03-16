@@ -130,15 +130,15 @@ export default function Dashboard() {
   const activities = dash?.recentActivity || [];
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 sm:p-8 space-y-6 sm:space-y-8">
       {/* Title */}
       <motion.div initial={{ opacity:0, y:-16 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.35 }}>
-        <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100">Dashboard</h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">Here's what's happening with your leads today.</p>
+        <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100">Dashboard</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-0.5">Here's what's happening with your leads today.</p>
       </motion.div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {stats.map((s, i) => <StatCard key={s.label} {...s} delay={i * 0.07} />)}
       </div>
 
