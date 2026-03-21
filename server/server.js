@@ -32,6 +32,13 @@ app.set('io', io);
 // Setup all socket events from sockets folder
 setupSockets(io);
 
+const io = new Server(server, {
+  cors: { origin: '*' },
+  // Add these two lines:
+  transports: ['polling', 'websocket'],
+  allowEIO3: true,
+});
+
 // Connect MongoDB then start server
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
