@@ -34,6 +34,11 @@ const leadSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  source: {
+  type: String,
+  enum: ['instagram', 'facebook', 'whatsapp_ad', 'organic', 'other', 'whatsapp_direct'],
+  default: 'organic'
+},
   status: {
     type: String,
     enum: ['new', 'contacted', 'interested', 'closed', 'lost'],
