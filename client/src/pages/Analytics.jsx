@@ -243,8 +243,8 @@ export default function Analytics() {
               <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false}/>
               <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false}/>
               <Tooltip content={<ChartTooltip/>}/>
-              <Area type="monotone" dataKey="leads"  stroke="#10b77f" strokeWidth={2.5} fill="url(#gLeads)"  name="Leads"/>
-              <Area type="monotone" dataKey="closed" stroke="#60a5fa" strokeWidth={2}   fill="url(#gClosed)" name="Closed"/>
+              <Area type="linear"   dataKey="leads"  stroke="#10b77f" strokeWidth={2.5} fill="url(#gLeads)"  name="Leads" dot={{ r: 3, fill: "#10b77f", strokeWidth: 0 }} activeDot={{ r: 5 }}/>
+              <Area type="linear"   dataKey="closed" stroke="#60a5fa" strokeWidth={2}   fill="url(#gClosed)" name="Closed" dot={{ r: 3, fill: "#60a5fa", strokeWidth: 0 }} activeDot={{ r: 5 }}/>
             </AreaChart>
           </ResponsiveContainer>
         )}
