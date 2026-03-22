@@ -3,7 +3,7 @@ const Lead    = require('../models/Lead');
 const Message = require('../models/Message');
 const Activity = require('../models/Activity');
 const { sendTextMessage, markAsRead } = require('../services/whatsappService');
-const { autoAssignLead } = require('../services/autoAssignService');
+const { autoAssign } = require('../services/autoAssignService');
 
 /* ─────────────────────────────────────────────────────────────
    GET /api/webhook/whatsapp
@@ -137,7 +137,7 @@ async function handleIncomingMessage(msg, contact, user, io) {
     console.log(`✅ New lead created: ${lead.name} (${fromPhone})`);
 
     // Auto-assign to available agent
-    await autoAssignLead(lead, user._id);
+    await autoAssign(lead, user._id);
 
     // Emit new lead event
     io?.to(`user_${user._id}`).emit('new_lead', {
