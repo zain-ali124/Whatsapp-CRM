@@ -35,10 +35,10 @@ const messageSchema = new mongoose.Schema({
     sparse: true  // allows multiple nulls
   },
   status: {
-    type: String,
-    enum: ['sent', 'delivered', 'read', 'failed'],
-    default: 'sent'
-  },
+  type: String,
+  enum: ['sent', 'delivered', 'read', 'failed', 'received'],
+  default: 'sent'
+},
   sentBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Agent',
