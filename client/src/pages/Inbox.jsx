@@ -248,7 +248,9 @@ export default function Inbox() {
     },
     onError: (err, _, ctx) => {
       if (ctx?.prev) qc.setQueryData(['messages', activeLead], ctx.prev);
-      toast.error('Failed to send message');
+      const msg = err?.response?.data?.message || err?.message || 'Failed to send message';
+      toast.error(msg);
+      console.error('[sendMessage error]', err);
     },
     onSettled: () => {
       qc.invalidateQueries(['messages', activeLead]);
@@ -304,6 +306,7 @@ export default function Inbox() {
 
   const handleSend = () => {
     const body = message.trim();
+    console.log('[handleSend] body:', body, '| activeLead:', activeLead, '| isPending:', sendMut.isPending);
     if (!body || !activeLead || sendMut.isPending) return;
     sendMut.mutate({ leadId: activeLead, body, type: 'text' });
   };
@@ -538,7 +541,7 @@ export default function Inbox() {
                   placeholder="Type a message… (Enter to send)"
                   rows={1}
                   className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 resize-none leading-5 max-h-[120px] py-1"
-                  style={{ overflow: 'hidden' }}
+                  style={{ overflow: 'hidden', minHeight: '24px' }}
                 />
 
                 <button
