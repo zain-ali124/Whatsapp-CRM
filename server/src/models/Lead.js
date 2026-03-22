@@ -37,7 +37,7 @@ const leadSchema = new mongoose.Schema({
   source: {
   type: String,
   enum: ['instagram', 'facebook', 'whatsapp_ad', 'organic', 'other', 'whatsapp_direct', 'referral', 'website'],
-  default: 'whatsapp_direct'
+  default: 'organic'
 },
   status: {
     type: String,
@@ -50,10 +50,10 @@ const leadSchema = new mongoose.Schema({
     default: null
   },
   source: {
-    type: String,
-    enum: ['instagram', 'facebook', 'whatsapp_ad', 'organic', 'other'],
-    default: 'organic'
-  },
+  type: String,
+  enum: ['instagram', 'facebook', 'whatsapp_ad', 'organic', 'other', 'whatsapp_direct', 'referral', 'website'],
+  default: 'organic'
+},
   tags: {
     type: [String],
     default: []
