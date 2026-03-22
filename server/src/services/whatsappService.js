@@ -147,9 +147,75 @@ async function verifyCredentials(phoneNumberId, accessToken) {
   }
 }
 
+
+
+
+/**
+ * Upload a media file to Meta's servers and return a media_id
+ * Used for sending audio/image/document messages
+ * @param {Buffer} buffer       - file buffer
+ * @param {string} mimeType     - e.g. 'audio/ogg; codecs=opus' or 'audio/webm'
+ * @param {string} filename     - e.g. 'voice.ogg'
+ * @param {object} user         - user document with WA credentials
+ */
+async function uploadMedia(buffer, mimeType, filename, user) {
+  const { phoneNumberId, accessToken } = getCreds(user);
+
+  if (!phoneNumberId || !accessToken) {
+    throw new Error('WhatsApp credentials not configured.');
+  }
+
+  const FormData = require('form-data');
+  const form = new FormData();
+  form.append('messaging_product', 'whatsapp');
+  form.append('file', buffer, { filename, contentType: mimeType });
+
+  const response = await axios.post(
+    `${BASE_URL}/${phoneNumberId}/media`,
+    form,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        ...form.getHeaders(),
+      },
+    }
+  );
+
+  return response.data.id; // media_id
+}
+
+/**
+ * Send an audio message using a previously uploaded media_id
+ */
+async function sendAudioMessage(to, mediaId, user) {
+  const { phoneNumberId, accessToken } = getCreds(user);
+  const normalizedTo = to.replace(/[\s\-\+]/g, '');
+
+  const response = await axios.post(
+    `${BASE_URL}/${phoneNumberId}/messages`,
+    {
+      messaging_product: 'whatsapp',
+      recipient_type:    'individual',
+      to:                normalizedTo,
+      type:              'audio',
+      audio:             { id: mediaId },
+    },
+    {
+      headers: {
+        Authorization:  `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  return response.data;
+}
+
 module.exports = {
   sendTextMessage,
   sendTemplateMessage,
   markAsRead,
   verifyCredentials,
+  uploadMedia,
+  sendAudioMessage,
 };

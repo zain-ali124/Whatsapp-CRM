@@ -50,6 +50,169 @@ function EmojiPicker({ onSelect, onClose }) {
   );
 }
 
+
+/* ─── Audio Player for received/sent voice messages ─── */
+function AudioPlayer({ src }) {
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef(null);
+
+  const toggle = () => {
+    if (!audioRef.current) return;
+    if (playing) { audioRef.current.pause(); }
+    else { audioRef.current.play(); }
+    setPlaying(p => !p);
+  };
+
+  const fmt = (s) => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+
+  return (
+    <div className="flex items-center gap-2 min-w-[160px]">
+      <audio ref={audioRef} src={src} preload="metadata"
+        onLoadedMetadata={e => setDuration(e.target.duration)}
+        onTimeUpdate={e => setProgress(e.target.currentTime / (e.target.duration || 1))}
+        onEnded={() => { setPlaying(false); setProgress(0); }}
+      />
+      <button onClick={toggle}
+        className="size-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors shrink-0">
+        <span className="material-symbols-outlined text-[18px]">{playing ? 'pause' : 'play_arrow'}</span>
+      </button>
+      <div className="flex-1 space-y-0.5">
+        <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+          <div className="h-full bg-white rounded-full transition-all" style={{ width: `${progress * 100}%` }}/>
+        </div>
+        <div className="flex justify-between text-[9px] opacity-70">
+          <span>{fmt((audioRef.current?.currentTime) || 0)}</span>
+          <span>{fmt(duration)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Voice Recorder ─── */
+function VoiceRecorder({ onSend, onCancel }) {
+  const [recording, setRecording] = useState(false);
+  const [seconds,   setSeconds]   = useState(0);
+  const [blob,      setBlob]      = useState(null);
+  const [sending,   setSending]   = useState(false);
+  const mediaRef    = useRef(null);
+  const chunksRef   = useRef([]);
+  const timerRef    = useRef(null);
+
+  useEffect(() => {
+    startRecording();
+    return () => { stopAll(); };
+  }, []);
+
+  const stopAll = () => {
+    clearInterval(timerRef.current);
+    if (mediaRef.current?.state === 'recording') mediaRef.current.stop();
+    mediaRef.current?.stream?.getTracks().forEach(t => t.stop());
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
+          ? 'audio/ogg;codecs=opus'
+          : 'audio/webm';
+
+      const mr = new MediaRecorder(stream, { mimeType });
+      mediaRef.current = mr;
+      chunksRef.current = [];
+
+      mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mr.onstop = () => {
+        const b = new Blob(chunksRef.current, { type: mimeType });
+        setBlob(b);
+        setRecording(false);
+        stream.getTracks().forEach(t => t.stop());
+      };
+
+      mr.start(100);
+      setRecording(true);
+      timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
+    } catch {
+      toast.error('Microphone access denied');
+      onCancel();
+    }
+  };
+
+  const stopRecording = () => {
+    clearInterval(timerRef.current);
+    if (mediaRef.current?.state === 'recording') mediaRef.current.stop();
+  };
+
+  const handleSend = async () => {
+    if (!blob) return;
+    setSending(true);
+    try {
+      await onSend(blob);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const fmt = (s) => `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl px-4 py-2.5"
+    >
+      {/* Cancel */}
+      <button onClick={() => { stopAll(); onCancel(); }}
+        className="text-slate-400 hover:text-red-500 transition-colors">
+        <span className="material-symbols-outlined text-[20px]">delete</span>
+      </button>
+
+      {/* Waveform animation / blob player */}
+      {recording ? (
+        <div className="flex items-center gap-1 flex-1">
+          <span className="size-2.5 rounded-full bg-red-500 animate-pulse"/>
+          {[...Array(12)].map((_, i) => (
+            <motion.div key={i}
+              animate={{ scaleY: [0.3, 1, 0.3] }}
+              transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.06, ease: 'easeInOut' }}
+              className="w-1 bg-red-400 rounded-full"
+              style={{ height: '20px', originY: '50%' }}
+            />
+          ))}
+        </div>
+      ) : blob ? (
+        <div className="flex-1">
+          <audio controls src={URL.createObjectURL(blob)} className="w-full h-8" style={{ filter: 'none' }}/>
+        </div>
+      ) : null}
+
+      {/* Timer */}
+      <span className="text-sm font-mono font-bold text-red-600 dark:text-red-400 tabular-nums min-w-[40px]">
+        {fmt(seconds)}
+      </span>
+
+      {/* Stop / Send */}
+      {recording ? (
+        <button onClick={stopRecording}
+          className="size-9 bg-red-500 hover:bg-red-600 text-white rounded-xl flex items-center justify-center transition-colors">
+          <span className="material-symbols-outlined text-[18px]">stop</span>
+        </button>
+      ) : (
+        <button onClick={handleSend} disabled={sending}
+          className="size-9 bg-primary text-white rounded-xl flex items-center justify-center disabled:opacity-60 transition-colors hover:scale-105">
+          {sending
+            ? <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+            : <span className="material-symbols-outlined text-[16px]">send</span>
+          }
+        </button>
+      )}
+    </motion.div>
+  );
+}
+
 /* ─── Conversation List Item ─── */
 function ConvoItem({ lead, isActive, onClick }) {
   const online = isOnline(lead.lastMessageAt);
@@ -104,6 +267,8 @@ function Bubble({ msg }) {
   const time = msgTime(msg.timestamp || msg.createdAt);
   const isSending = msg.status === 'sending';
 
+  const isAudio = msg.type === 'audio';
+
   return (
     <div className={`flex flex-col ${out ? 'items-end ml-auto' : 'items-start'} max-w-[70%]`}>
       <div className={`px-3.5 py-2.5 rounded-2xl text-sm shadow-sm
@@ -112,13 +277,15 @@ function Bubble({ msg }) {
           : 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-tl-none'
         } ${isSending ? 'opacity-60' : ''}`}
       >
-        {msg.mediaUrl && (
+        {isAudio && msg.mediaUrl ? (
+          <AudioPlayer src={msg.mediaUrl} />
+        ) : msg.mediaUrl && msg.type !== 'audio' ? (
           <div className="mb-2 flex items-center gap-2 bg-white/20 rounded-lg p-2">
             <span className="material-symbols-outlined text-[18px]">description</span>
             <p className="text-xs font-semibold">Attachment</p>
           </div>
-        )}
-        <p className="leading-relaxed whitespace-pre-wrap">{msg.body}</p>
+        ) : null}
+        {!isAudio && <p className="leading-relaxed whitespace-pre-wrap">{msg.body}</p>}
       </div>
       <div className={`flex items-center gap-1 mt-1 ${out ? 'flex-row-reverse' : ''}`}>
         <span className="text-[10px] text-slate-400">{time}</span>
@@ -168,6 +335,7 @@ export default function Inbox() {
   const messagesEndRef = useRef(null);
   const fileInputRef   = useRef(null);
   const inputRef       = useRef(null);
+  const [showVoice, setShowVoice] = useState(false);
 
   // Mobile: switch to chat when lead selected
   useEffect(() => {
@@ -350,6 +518,19 @@ export default function Inbox() {
     } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
   };
 
+  const handleSendVoice = async (blob) => {
+    if (!activeLead) return;
+    try {
+      await messageApi.sendAudio(activeLead, blob);
+      setShowVoice(false);
+      qc.invalidateQueries({ queryKey: ['messages', activeLead] });
+      qc.invalidateQueries({ queryKey: ['inbox-leads'] });
+      toast.success('Voice message sent! 🎤');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to send voice message');
+    }
+  };
+
   return (
     <div className="flex flex-1 overflow-hidden h-full relative">
 
@@ -520,41 +701,65 @@ export default function Inbox() {
                 )}
               </AnimatePresence>
 
-              <div className="flex items-end gap-2 bg-slate-100 dark:bg-slate-800 rounded-2xl px-3 py-2">
-                <button onClick={() => setShowEmoji(v => !v)}
-                  className={`p-1 rounded-lg transition-colors shrink-0 ${showEmoji ? 'text-primary bg-primary/10' : 'text-slate-400 hover:text-primary'}`}>
-                  <span className="material-symbols-outlined text-[20px]">sentiment_satisfied</span>
-                </button>
+              <AnimatePresence mode="wait">
+                {showVoice ? (
+                  <VoiceRecorder
+                    key="voice"
+                    onSend={handleSendVoice}
+                    onCancel={() => setShowVoice(false)}
+                  />
+                ) : (
+                  <motion.div key="text"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    className="flex items-end gap-2 bg-slate-100 dark:bg-slate-800 rounded-2xl px-3 py-2"
+                  >
+                    <button onClick={() => setShowEmoji(v => !v)}
+                      className={`p-1 rounded-lg transition-colors shrink-0 ${showEmoji ? 'text-primary bg-primary/10' : 'text-slate-400 hover:text-primary'}`}>
+                      <span className="material-symbols-outlined text-[20px]">sentiment_satisfied</span>
+                    </button>
 
-                <button onClick={() => fileInputRef.current?.click()}
-                  className="p-1 text-slate-400 hover:text-primary transition-colors shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">attach_file</span>
-                </button>
-                <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange}
-                  accept="image/*,video/*,.pdf,.doc,.docx"/>
+                    <button onClick={() => fileInputRef.current?.click()}
+                      className="p-1 text-slate-400 hover:text-primary transition-colors shrink-0">
+                      <span className="material-symbols-outlined text-[20px]">attach_file</span>
+                    </button>
+                    <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange}
+                      accept="image/*,video/*,.pdf,.doc,.docx"/>
 
-                <textarea
-                  ref={inputRef}
-                  value={message}
-                  onChange={e => { setMessage(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
-                  onKeyDown={handleKey}
-                  placeholder="Type a message… (Enter to send)"
-                  rows={1}
-                  className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 resize-none leading-5 max-h-[120px] py-1"
-                  style={{ overflow: 'hidden', minHeight: '24px' }}
-                />
+                    <textarea
+                      ref={inputRef}
+                      value={message}
+                      onChange={e => { setMessage(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
+                      onKeyDown={handleKey}
+                      placeholder="Type a message… (Enter to send)"
+                      rows={1}
+                      className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 resize-none leading-5 max-h-[120px] py-1"
+                      style={{ overflow: 'hidden', minHeight: '24px' }}
+                    />
 
-                <button
-                  onClick={handleSend}
-                  disabled={!message.trim() || sendMut.isPending}
-                  className="size-9 bg-primary text-white rounded-xl flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0 shadow-[0_2px_8px_rgba(16,183,127,0.35)] hover:scale-105 active:scale-95"
-                >
-                  {sendMut.isPending
-                    ? <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-                    : <span className="material-symbols-outlined text-[16px]">send</span>
-                  }
-                </button>
-              </div>
+                    {/* Voice button — shows when input is empty, send when typing */}
+                    {message.trim() ? (
+                      <button
+                        onClick={handleSend}
+                        disabled={sendMut.isPending}
+                        className="size-9 bg-primary text-white rounded-xl flex items-center justify-center transition-all disabled:opacity-40 shrink-0 shadow-[0_2px_8px_rgba(16,183,127,0.35)] hover:scale-105 active:scale-95"
+                      >
+                        {sendMut.isPending
+                          ? <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                          : <span className="material-symbols-outlined text-[16px]">send</span>
+                        }
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => { setShowEmoji(false); setShowVoice(true); }}
+                        className="size-9 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl flex items-center justify-center transition-all hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/20 shrink-0"
+                        title="Record voice message"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">mic</span>
+                      </button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </>
         ) : (

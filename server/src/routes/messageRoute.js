@@ -1,13 +1,28 @@
-const express = require('express');
-const router  = express.Router();
+const express  = require('express');
+const router   = express.Router();
+const multer   = require('multer');
 const { protect } = require('../middlewares/auth');
-const { getMessages, sendMessage } = require('../controllers/messageController');
+const { getMessages, sendMessage, sendAudio } = require('../controllers/messageController');
+
+// multer: store audio in memory (max 16MB — WhatsApp audio limit)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits:  { fileSize: 16 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['audio/ogg', 'audio/webm', 'audio/mp4', 'audio/mpeg', 'audio/wav', 'audio/aac'];
+    if (allowed.some(t => file.mimetype.startsWith('audio'))) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only audio files allowed'));
+    }
+  },
+});
 
 router.use(protect);
 
-// ✅ CRITICAL: /send must be registered BEFORE /:leadId
-// If /:leadId comes first, Express matches POST /send with leadId = "send"
-router.post('/send',   sendMessage);   // POST /api/messages/send
-router.get('/:leadId', getMessages);   // GET  /api/messages/:leadId
+// IMPORTANT: static routes before /:leadId
+router.post('/send',        sendMessage);
+router.post('/send-audio',  upload.single('audio'), sendAudio);
+router.get('/:leadId',      getMessages);
 
 module.exports = router;
