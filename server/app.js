@@ -12,9 +12,6 @@ app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
 
-// Serve frontend build
-app.use(express.static(path.join(__dirname, '../client/build')));
-
 // ================= API ROUTES =================
 app.use('/api/auth', require('./src/routes/authRoute'));
 app.use('/api/leads', require('./src/routes/leadRoute'));
@@ -29,20 +26,12 @@ app.get('/api/health', (req, res) => {
   res.json({ message: 'WhatsApp CRM Server is running!' });
 });
 
-// Fallback for client-side routes
-app.get('*', (req, res) => {
+// ================= SERVE FRONTEND =================
+app.use(express.static(path.join(__dirname, '../client/build')));
+
+// ================= FALLBACK (FIXED ✅) =================
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, '../client/build/index.html'));
 });
 
-// ================= FRONTEND SERVING =================
-
-// 1. Serve React static files
-app.use(express.static(path.join(__dirname, 'client/build')));
-
-// 2. Catch-all route (Express 5 SAFE ✅)
-app.use((req, res) => {
-  res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
-});
-
-// ================= EXPORT =================
 module.exports = app;
