@@ -31,6 +31,10 @@ const setupSockets = (io) => {
     // ─── Agent comes online ───────────────────────────────────
     socket.on('agent_online', async ({ agentId, userId }) => {
       try {
+        // Store on socket object for cleanup during disconnect
+        socket.agentId = agentId;
+        socket.userId = userId;
+
         await Agent.findByIdAndUpdate(agentId, {
           isOnline: true
         });
@@ -51,6 +55,8 @@ const setupSockets = (io) => {
     // ─── Agent goes offline ───────────────────────────────────
     socket.on('agent_offline', async ({ agentId, userId }) => {
       try {
+        socket.agentId = null; // Clear if explicitly going offline
+        
         await Agent.findByIdAndUpdate(agentId, {
           isOnline: false
         });
@@ -76,8 +82,26 @@ const setupSockets = (io) => {
     });
 
     // ─── Disconnect ───────────────────────────────────────────
-    socket.on('disconnect', () => {
-      console.log('❌ Client disconnected:', socket.id);
+    socket.on('disconnect', async () => {
+      console.log('ℹ️ Socket disconnected:', socket.id);
+      
+      // If an agent disconnects unexpectedly (refresh/close tab)
+      if (socket.agentId && socket.userId) {
+        try {
+          await Agent.findByIdAndUpdate(socket.agentId, {
+            isOnline: false
+          });
+
+          io.to(`user_${socket.userId}`).emit('agent_status_changed', {
+            agentId: socket.agentId,
+            isOnline: false
+          });
+          
+          console.log(`ℹ️ Agent ${socket.agentId} auto-cleaned to offline`);
+        } catch (err) {
+          // Silent fail on disconnect cleanup
+        }
+      }
     });
   });
 
