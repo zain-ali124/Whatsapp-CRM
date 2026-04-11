@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: whatsapp-crm-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+
+  - type: static
+    name: whatsapp-crm-web
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

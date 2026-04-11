@@ -219,15 +219,25 @@ Backend API: http://localhost:5000
 5. Set **Start Command** → `node server.js`
 6. Add all environment variables from `server/.env`
 
-### Frontend → Vercel
+### Frontend → Render Static Site
 
-1. Import GitHub repo on Vercel
+1. Create a **Static Site** on Render
 2. Set **Root Directory** → `client`
-3. Add environment variables:
+3. Set **Build Command** → `npm install && npm run build`
+4. Set **Publish Directory** → `dist`
+5. Add environment variables:
    ```
    VITE_API_URL    = https://your-backend.onrender.com/api
    VITE_SOCKET_URL = https://your-backend.onrender.com
    ```
+6. Add a rewrite so React Router routes work after refresh:
+   ```
+   Source:      /*
+   Destination: /index.html
+   Action:      Rewrite
+   ```
+
+This repo also includes a root `render.yaml` with the same SPA rewrite, so redeploying from the blueprint will preserve the fix automatically.
 
 ---
 
