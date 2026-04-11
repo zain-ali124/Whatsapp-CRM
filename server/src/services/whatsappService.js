@@ -1,15 +1,29 @@
 const axios = require('axios');
+const {
+  GRAPH_BASE_URL: BASE_URL,
+  getResolvedTenantCredentials,
+  getAppSecretProof,
+} = require('./metaEmbeddedSignupService');
 
-const META_API_VERSION = 'v19.0';
-const BASE_URL = `https://graph.facebook.com/${META_API_VERSION}`;
+async function getCreds(user) {
+  const tenantId = user?._id?.toString?.() || user?.id?.toString?.() || user?.ownerId;
 
-/**
- * Get credentials from either user object or .env fallback
- */
-function getCreds(user) {
+  if (user?.waPhoneNumberId && user?.waAccessToken) {
+    return {
+      phoneNumberId: user.waPhoneNumberId,
+      accessToken: user.waAccessToken,
+      wabaId: user.waWabaId || '',
+    };
+  }
+
+  if (tenantId) {
+    return getResolvedTenantCredentials(tenantId);
+  }
+
   return {
-    phoneNumberId: user?.waPhoneNumberId || process.env.META_PHONE_NUMBER_ID,
-    accessToken:   user?.waAccessToken   || process.env.META_ACCESS_TOKEN,
+    phoneNumberId: process.env.META_PHONE_NUMBER_ID,
+    accessToken: process.env.META_ACCESS_TOKEN,
+    wabaId: process.env.META_WABA_ID || '',
   };
 }
 
@@ -20,10 +34,10 @@ function getCreds(user) {
  * @param {object} user    - user document (has waPhoneNumberId + waAccessToken)
  */
 async function sendTextMessage(to, body, user) {
-  const { phoneNumberId, accessToken } = getCreds(user);
+  const { phoneNumberId, accessToken } = await getCreds(user);
 
   if (!phoneNumberId || !accessToken) {
-    throw new Error('WhatsApp credentials not configured. Go to Settings → WhatsApp Setup.');
+    throw new Error('WhatsApp credentials not configured. Go to Settings -> WhatsApp Setup.');
   }
 
   // Normalize number: strip +, spaces, dashes
@@ -41,6 +55,7 @@ async function sendTextMessage(to, body, user) {
     `${BASE_URL}/${phoneNumberId}/messages`,
     payload,
     {
+      params: { appsecret_proof: getAppSecretProof(accessToken) },
       headers: {
         Authorization:  `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
@@ -59,7 +74,7 @@ async function sendTextMessage(to, body, user) {
  * @param {object} user
  */
 async function sendTemplateMessage(to, templateName, langCode = 'en_US', user) {
-  const { phoneNumberId, accessToken } = getCreds(user);
+  const { phoneNumberId, accessToken } = await getCreds(user);
 
   if (!phoneNumberId || !accessToken) {
     throw new Error('WhatsApp credentials not configured.');
@@ -81,6 +96,7 @@ async function sendTemplateMessage(to, templateName, langCode = 'en_US', user) {
     `${BASE_URL}/${phoneNumberId}/messages`,
     payload,
     {
+      params: { appsecret_proof: getAppSecretProof(accessToken) },
       headers: {
         Authorization:  `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
@@ -97,7 +113,7 @@ async function sendTemplateMessage(to, templateName, langCode = 'en_US', user) {
  * @param {object} user
  */
 async function markAsRead(messageId, user) {
-  const { phoneNumberId, accessToken } = getCreds(user);
+  const { phoneNumberId, accessToken } = await getCreds(user);
   if (!phoneNumberId || !accessToken) return;
 
   try {
@@ -109,6 +125,7 @@ async function markAsRead(messageId, user) {
         message_id:        messageId,
       },
       {
+        params: { appsecret_proof: getAppSecretProof(accessToken) },
         headers: {
           Authorization:  `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
@@ -130,7 +147,10 @@ async function verifyCredentials(phoneNumberId, accessToken) {
     const response = await axios.get(
       `${BASE_URL}/${phoneNumberId}`,
       {
-        params: { fields: 'display_phone_number,verified_name' },
+        params: {
+          fields: 'display_phone_number,verified_name',
+          appsecret_proof: getAppSecretProof(accessToken),
+        },
         headers: { Authorization: `Bearer ${accessToken}` },
       }
     );
@@ -159,7 +179,7 @@ async function verifyCredentials(phoneNumberId, accessToken) {
  * @param {object} user         - user document with WA credentials
  */
 async function uploadMedia(buffer, mimeType, filename, user) {
-  const { phoneNumberId, accessToken } = getCreds(user);
+  const { phoneNumberId, accessToken } = await getCreds(user);
 
   if (!phoneNumberId || !accessToken) {
     throw new Error('WhatsApp credentials not configured.');
@@ -174,6 +194,7 @@ async function uploadMedia(buffer, mimeType, filename, user) {
     `${BASE_URL}/${phoneNumberId}/media`,
     form,
     {
+      params: { appsecret_proof: getAppSecretProof(accessToken) },
       headers: {
         Authorization: `Bearer ${accessToken}`,
         ...form.getHeaders(),
@@ -188,7 +209,7 @@ async function uploadMedia(buffer, mimeType, filename, user) {
  * Send an audio message using a previously uploaded media_id
  */
 async function sendAudioMessage(to, mediaId, user) {
-  const { phoneNumberId, accessToken } = getCreds(user);
+  const { phoneNumberId, accessToken } = await getCreds(user);
   const normalizedTo = to.replace(/[\s\-\+]/g, '');
 
   const response = await axios.post(
@@ -201,6 +222,7 @@ async function sendAudioMessage(to, mediaId, user) {
       audio:             { id: mediaId },
     },
     {
+      params: { appsecret_proof: getAppSecretProof(accessToken) },
       headers: {
         Authorization:  `Bearer ${accessToken}`,
         'Content-Type': 'application/json',

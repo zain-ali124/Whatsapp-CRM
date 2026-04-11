@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  waWabaId: {
+    type: String,
+    default: ''
+  },
   waPhoneNumberId: {
     type: String,
     default: ''
@@ -58,6 +62,7 @@ userSchema.methods.toPublic = function() {
     name: this.name,
     email: this.email,
     businessName: this.businessName,
+    waWabaId: this.waWabaId,
     waPhoneNumberId: this.waPhoneNumberId,
     plan: this.plan,
     planExpiry: this.planExpiry,

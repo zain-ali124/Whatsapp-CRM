@@ -2,6 +2,8 @@ const User    = require('../models/User');
 const Lead    = require('../models/Lead');
 const Message = require('../models/Message');
 const Activity = require('../models/Activity');
+const crypto = require('crypto');
+const WhatsAppConnection = require('../models/WhatsAppConnection');
 const { sendTextMessage, markAsRead } = require('../services/whatsappService');
 const { autoAssign } = require('../services/autoAssignService');
 
@@ -27,6 +29,27 @@ exports.verifyWebhook = (req, res) => {
   return res.status(403).json({ error: 'Verification failed' });
 };
 
+function isValidMetaSignature(req) {
+  const signature = req.get('X-Hub-Signature-256');
+  if (!signature || !req.rawBody || !signature.startsWith('sha256=')) {
+    return false;
+  }
+
+  const expected = crypto
+    .createHmac('sha256', process.env.META_APP_SECRET)
+    .update(req.rawBody)
+    .digest('hex');
+  const received = signature.slice('sha256='.length);
+  const expectedBuffer = Buffer.from(expected, 'hex');
+  const receivedBuffer = Buffer.from(received, 'hex');
+
+  if (expectedBuffer.length !== receivedBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+}
+
 /* ─────────────────────────────────────────────────────────────
    POST /api/webhook/whatsapp
    Handles all incoming events from Meta:
@@ -34,6 +57,10 @@ exports.verifyWebhook = (req, res) => {
    - Message status updates (sent, delivered, read, failed)
 ──────────────────────────────────────────────────────────────── */
 exports.handleWebhook = async (req, res) => {
+  if (!isValidMetaSignature(req)) {
+    return res.status(401).json({ error: 'Invalid Meta signature' });
+  }
+
   // Always respond 200 immediately — Meta will retry if you don't
   res.status(200).json({ status: 'ok' });
 
@@ -51,7 +78,13 @@ exports.handleWebhook = async (req, res) => {
     if (!phoneNumberId) return;
 
     // ── Find the workspace this phone number belongs to ──────────
-    const user = await User.findOne({ waPhoneNumberId: phoneNumberId });
+    let user = await User.findOne({ waPhoneNumberId: phoneNumberId });
+    if (!user) {
+      const connection = await WhatsAppConnection.findOne({ phoneNumberId });
+      if (connection) {
+        user = await User.findById(connection.tenantId);
+      }
+    }
     if (!user) {
       console.warn('⚠️  Received webhook for unknown phone number ID:', phoneNumberId);
       return;

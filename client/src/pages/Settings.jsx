@@ -3,9 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { authApi } from '../api/authApi';
+import { whatsappApi } from '../api/whatsappApi';
 import { useAuthStore } from '../store/authStore';
 import { getInitials } from '../utils/helpers';
 import api from '../api/axios';
+import WhatsAppConnectButton from '../components/whatsapp/WhatsAppConnectButton';
 
 const TABS = [
   { id: 'profile',    label: 'Profile',          icon: 'account_circle'   },
@@ -166,28 +168,67 @@ function WhatsAppTab() {
     onError:    (err) => toast.error(err.response?.data?.message || 'Save failed'),
   });
 
-  const webhookUrl = `${import.meta.env.VITE_API_URL}/webhook/whatsapp`;
+  const [testMessage, setTestMessage] = useState({
+    to: '',
+    body: 'Hello from my WhatsApp CRM',
+  });
+
+  const { data: embeddedConnection } = useQuery({
+    queryKey: ['whatsapp-connection'],
+    queryFn: () => whatsappApi.getConnection().then((res) => res.data),
+  });
+
+  const testMut = useMutation({
+    mutationFn: (payload) => whatsappApi.sendTestMessage(payload),
+    onSuccess: () => toast.success('Test message sent'),
+    onError: (error) => toast.error(error.response?.data?.message || 'Failed to send test message'),
+  });
+
+  const webhookUrl = embeddedConnection?.webhookUrl || `${import.meta.env.VITE_API_URL}/whatsapp/webhook`;
+  const connection = embeddedConnection?.connection;
 
   return (
     <div className="space-y-6">
       <Section title="Meta WhatsApp Cloud API" description="Connect your business number to start receiving messages.">
         {/* Status */}
         <div className={`flex items-center gap-3 p-4 rounded-xl border ${
-          user?.waPhoneNumberId
+          (connection?.phoneNumberId || user?.waPhoneNumberId)
             ? 'bg-primary/5 border-primary/30'
             : 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800'
         }`}>
-          <span className={`material-symbols-outlined text-[20px] ${user?.waPhoneNumberId ? 'text-primary' : 'text-amber-500'}`}>
-            {user?.waPhoneNumberId ? 'check_circle' : 'warning'}
+          <span className={`material-symbols-outlined text-[20px] ${(connection?.phoneNumberId || user?.waPhoneNumberId) ? 'text-primary' : 'text-amber-500'}`}>
+            {(connection?.phoneNumberId || user?.waPhoneNumberId) ? 'check_circle' : 'warning'}
           </span>
           <div>
-            <p className={`text-sm font-bold ${user?.waPhoneNumberId ? 'text-primary' : 'text-amber-700 dark:text-amber-400'}`}>
-              {user?.waPhoneNumberId ? 'WhatsApp Connected' : 'Not Connected'}
+            <p className={`text-sm font-bold ${(connection?.phoneNumberId || user?.waPhoneNumberId) ? 'text-primary' : 'text-amber-700 dark:text-amber-400'}`}>
+              {(connection?.phoneNumberId || user?.waPhoneNumberId) ? 'WhatsApp Connected' : 'Not Connected'}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {user?.waPhoneNumberId ? `Phone Number ID: ${user.waPhoneNumberId}` : 'Add your credentials below to connect.'}
+              {connection?.phoneNumberId
+                ? `Embedded Signup connected: ${connection.phoneNumberId}`
+                : user?.waPhoneNumberId
+                  ? `Manual config: ${user.waPhoneNumberId}`
+                  : 'Add your credentials below to connect.'}
             </p>
           </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Embedded Signup</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Connect a tenant-owned WhatsApp Business account using Meta&apos;s guided popup.
+            </p>
+          </div>
+          <WhatsAppConnectButton
+            onConnected={() => {
+              toast.success('WhatsApp Business connected');
+              qc.invalidateQueries(['whatsapp-connection']);
+              qc.invalidateQueries(['me']);
+            }}
+            onError={(message) => toast.error(message)}
+            onCancel={() => toast('Signup cancelled')}
+          />
         </div>
 
         {/* Webhook URL — read only */}
@@ -207,6 +248,14 @@ function WhatsAppTab() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Embedded WABA ID</label>
+            <input value={connection?.wabaId || ''} readOnly className="input-field font-mono text-sm bg-slate-50 dark:bg-slate-800" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Embedded Phone Number ID</label>
+            <input value={connection?.phoneNumberId || ''} readOnly className="input-field font-mono text-sm bg-slate-50 dark:bg-slate-800" />
+          </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Phone Number ID</label>
             <input
@@ -245,19 +294,54 @@ function WhatsAppTab() {
           </div>
         </div>
 
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-4">
+          <div>
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Send test message</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Use this after Embedded Signup to verify the tenant-scoped connection token works.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              value={testMessage.to}
+              onChange={(e) => setTestMessage((current) => ({ ...current, to: e.target.value }))}
+              placeholder="Recipient phone in E.164 format"
+              className="input-field"
+            />
+            <input
+              value={testMessage.body}
+              onChange={(e) => setTestMessage((current) => ({ ...current, body: e.target.value }))}
+              placeholder="Message body"
+              className="input-field"
+            />
+          </div>
+          {connection?.lastError ? (
+            <p className="text-sm text-red-500">{connection.lastError}</p>
+          ) : null}
+        </div>
+
         <div className="flex items-center justify-between pt-2">
-          <a href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started" target="_blank" rel="noopener noreferrer"
+          <a href="https://developers.facebook.com/docs/whatsapp/embedded-signup/" target="_blank" rel="noopener noreferrer"
             className="text-sm text-primary hover:underline flex items-center gap-1">
             <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-            Meta setup guide
+            Meta Embedded Signup docs
           </a>
-          <button
-            onClick={() => saveMut.mutate(form)}
-            disabled={saveMut.isPending || !form.waPhoneNumberId}
-            className="btn-primary disabled:opacity-60"
-          >
-            {saveMut.isPending ? 'Saving…' : 'Save & Connect'}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => testMut.mutate(testMessage)}
+              disabled={testMut.isPending || !connection?.phoneNumberId}
+              className="btn-secondary disabled:opacity-60"
+            >
+              {testMut.isPending ? 'Sending...' : 'Send Test Message'}
+            </button>
+            <button
+              onClick={() => saveMut.mutate(form)}
+              disabled={saveMut.isPending || !form.waPhoneNumberId}
+              className="btn-primary disabled:opacity-60"
+            >
+              {saveMut.isPending ? 'Saving…' : 'Save & Connect'}
+            </button>
+          </div>
         </div>
       </Section>
     </div>
