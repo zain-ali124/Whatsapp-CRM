@@ -4,7 +4,7 @@ A full-stack multi-tenant CRM built on the MERN stack that connects to the **Met
 
 ---
 
-## Live Demo
+# Live Demo
 
 | Service | URL |
 |---|---|
