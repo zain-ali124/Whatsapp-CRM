@@ -9,7 +9,7 @@ A full-stack multi-tenant CRM built on the MERN stack that connects to the **Met
 | Service | URL |
 |---|---|
 | Frontend | Deployed on Render |
-| Backend API | Deployed on Render |
+| Backend API | Deployed on Render \
 
 ---
 
